@@ -14,9 +14,9 @@ type Config struct {
 	DatabaseURL    string
 }
 
-func LoadConfig() (*Config, error) {
+func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
-		_ = fmt.Errorf("Failed to load .env")
+		_ = fmt.Errorf("Failed to load .env: %s", err)
 	}
 
 	cfg := &Config{
