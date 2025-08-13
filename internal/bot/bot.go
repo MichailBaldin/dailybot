@@ -54,6 +54,8 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) {
 		b.handleWeather(chatID, message.CommandArguments())
 	case "news":
 		b.handleNews(chatID)
+	case "exchange":
+		b.handleExchange(chatID, message.CommandArguments())
 	default:
 		if message.IsCommand() {
 			b.sendMessage(chatID, "Unknown command. Please use /help")
