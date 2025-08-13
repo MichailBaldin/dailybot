@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -32,8 +33,34 @@ func GetNews(apiKey string) (string, error) {
 		return getNewsStub(), nil
 	}
 
-	// Используем top-headlines для главных новостей России
-	url := fmt.Sprintf("https://newsapi.org/v2/top-headlines?country=ru&pageSize=5&apiKey=%s", apiKey)
+	// Сначала пробуем российские новости
+	newsText, err := fetchNews(apiKey, "ru")
+	if err != nil {
+		return "", err
+	}
+
+	// Если российских новостей нет, пробуем общие новости
+	if newsText == "" {
+		log.Println("No Russian news found, trying general news...")
+		newsText, err = fetchNewsGeneral(apiKey)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Если и общих новостей нет, возвращаем заглушку
+	if newsText == "" {
+		log.Println("No news found, returning stub")
+		return getNewsStub(), nil
+	}
+
+	return newsText, nil
+}
+
+func fetchNews(apiKey, country string) (string, error) {
+	url := fmt.Sprintf("https://newsapi.org/v2/top-headlines?country=%s&pageSize=5&apiKey=%s", country, apiKey)
+
+	log.Printf("Fetching news from: %s", url)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(url)
@@ -59,12 +86,44 @@ func GetNews(apiKey string) (string, error) {
 		return "", fmt.Errorf("ошибка обработки данных новостей")
 	}
 
+	log.Printf("News API response: status=%s, totalResults=%d, articles=%d",
+		news.Status, news.TotalResults, len(news.Articles))
+
 	if news.Status != "ok" {
 		return "", fmt.Errorf("ошибка получения новостей")
 	}
 
 	if len(news.Articles) == 0 {
-		return "На данный момент новостей нет", nil
+		return "", nil // пустая строка означает "нет новостей"
+	}
+
+	return formatNews(news.Articles), nil
+}
+
+func fetchNewsGeneral(apiKey string) (string, error) {
+	// Пробуем общие новости по ключевым словам
+	url := fmt.Sprintf("https://newsapi.org/v2/everything?q=технологии OR политика OR экономика&language=ru&sortBy=publishedAt&pageSize=5&apiKey=%s", apiKey)
+
+	log.Printf("Fetching general news from: %s", url)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", nil
+	}
+
+	var news NewsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&news); err != nil {
+		return "", nil
+	}
+
+	if news.Status != "ok" || len(news.Articles) == 0 {
+		return "", nil
 	}
 
 	return formatNews(news.Articles), nil
@@ -74,7 +133,7 @@ func formatNews(articles []Article) string {
 	result := "<b>Главные новости дня</b>\n\n"
 
 	for i, article := range articles {
-		if i >= 5 { // максимум 5 новостей
+		if i >= 5 {
 			break
 		}
 
@@ -90,7 +149,6 @@ func formatNews(articles []Article) string {
 
 		result += fmt.Sprintf("<b>%d. %s</b>\n", i+1, title)
 
-		// Добавляем описание если есть
 		if article.Description != nil && *article.Description != "" {
 			description := *article.Description
 			if len(description) > 150 {

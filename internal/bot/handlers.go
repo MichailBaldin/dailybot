@@ -3,6 +3,7 @@ package bot
 import (
 	"dailybot/internal/api"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -53,11 +54,15 @@ func (b *Bot) handleWeather(chatID int64, args string) {
 func (b *Bot) handleNews(chatID int64) {
 	b.sendMessage(chatID, "Загружаю актуальные новости...")
 
+	log.Printf("Fetching news for chat %d", chatID)
+
 	newsInfo, err := api.GetNews(b.config.NewsAPIKey)
 	if err != nil {
+		log.Printf("News error: %v", err)
 		b.sendMessage(chatID, fmt.Sprintf("<b>Ошибка:</b> %s", err.Error()))
 		return
 	}
 
+	log.Printf("News fetched successfully")
 	b.sendMessage(chatID, newsInfo)
 }
