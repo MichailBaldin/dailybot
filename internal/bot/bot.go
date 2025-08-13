@@ -19,7 +19,7 @@ func New(cfg *config.Config) (*Bot, error) {
 	}
 
 	api.Debug = true
-	log.Printf("Bot authorized as @%s", &api.Self.UserName)
+	log.Printf("Bot authorized as @%s", api.Self.UserName)
 
 	return &Bot{
 		api:    api,
