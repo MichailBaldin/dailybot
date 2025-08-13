@@ -18,7 +18,7 @@ func New(cfg *config.Config) (*Bot, error) {
 		return nil, err
 	}
 
-	api.Debug = true
+	api.Debug = false
 	log.Printf("Bot authorized as @%s", api.Self.UserName)
 
 	return &Bot{
@@ -52,6 +52,8 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) {
 		b.handleHelp(chatID)
 	case "weather":
 		b.handleWeather(chatID, message.CommandArguments())
+	case "news":
+		b.handleNews(chatID)
 	default:
 		if message.IsCommand() {
 			b.sendMessage(chatID, "Unknown command. Please use /help")

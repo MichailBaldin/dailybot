@@ -11,7 +11,8 @@ func (b *Bot) handleStart(chatID int64) {
 
 <b>Мои команды:</b>
 /help - подробная справка
-/weather [город] - узнать погоду`
+/weather [город] - узнать погоду
+/news - узнать актуальные новости`
 
 	b.sendMessage(chatID, text)
 }
@@ -20,7 +21,11 @@ func (b *Bot) handleHelp(chatID int64) {
 	text := `<b>Справка по командам:</b>
 
 <b>Мои команды:</b>
-/weather [город] - узнать погоду
+<b>/weather [город]</b> - получить прогноз погоды
+Пример: <code>/weather Москва</code>
+
+<b>/news</b> - топ-5 главных новостей дня
+Актуальные новости из российских источников
 
 <i>Бот работает на языке Go и использует официальные API</i>`
 
@@ -30,7 +35,7 @@ func (b *Bot) handleHelp(chatID int64) {
 func (b *Bot) handleWeather(chatID int64, args string) {
 	city := strings.TrimSpace(args)
 	if city == "" {
-		b.sendMessage(chatID, "Укажите город для получения прогноза погоды\n\n<i>Пример:</i> <code>/weather Москва</code>")
+		b.sendMessage(chatID, "Укажите город для получения прогноза погоды\n\nПример: <code>/weather Москва</code>")
 		return
 	}
 
@@ -43,4 +48,16 @@ func (b *Bot) handleWeather(chatID int64, args string) {
 	}
 
 	b.sendMessage(chatID, weatherInfo)
+}
+
+func (b *Bot) handleNews(chatID int64) {
+	b.sendMessage(chatID, "Загружаю актуальные новости...")
+
+	newsInfo, err := api.GetNews(b.config.NewsAPIKey)
+	if err != nil {
+		b.sendMessage(chatID, fmt.Sprintf("<b>Ошибка:</b> %s", err.Error()))
+		return
+	}
+
+	b.sendMessage(chatID, newsInfo)
 }

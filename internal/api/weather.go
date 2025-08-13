@@ -108,47 +108,46 @@ func GetWeather(city, apiKey string) (string, error) {
 func formatWeather(w WeatherResponse) string {
 	temp := int(w.Main.Temp)
 	feelsLike := int(w.Main.FeelsLike)
-	tempMin := int(w.Main.TempMin)
-	tempMax := int(w.Main.TempMax)
 
 	description := "ясно"
 	if len(w.Weather) > 0 {
 		description = w.Weather[0].Description
 	}
 
-	windSpeed := int(w.Wind.Speed)
-	visibility := w.Visibility / 1000 // конвертируем в км
-
-	// Давление в мм рт.ст.
-	pressureMmHg := int(float64(w.Main.Pressure) * 0.75006)
-
-	return fmt.Sprintf(`%s <b>%s, %s</b>
+	result := fmt.Sprintf(`<b>Погода в городе %s, %s</b>
 
 <b>Температура:</b> %d°C (ощущается как %d°C)
-<b>Мин/Макс:</b> %d°C / %d°C
 <b>Описание:</b> %s
-<b>Влажность:</b> %d%%
-<b>Ветер:</b> %d м/с
-<b>Давление:</b> %d мм рт.ст.
-<b>Видимость:</b> %d км
-<b>Облачность:</b> %d%%`,
-		w.Name, w.Sys.Country,
-		temp, feelsLike, tempMin, tempMax,
-		description, w.Main.Humidity, windSpeed,
-		pressureMmHg, visibility, w.Clouds.All)
+<b>Влажность:</b> %d%%`,
+		w.Name,
+		w.Sys.Country,
+		temp,
+		feelsLike,
+		description,
+		w.Main.Humidity)
+
+	// Добавляем дополнительные данные если они есть
+	if w.Wind.Speed > 0 {
+		windSpeed := int(w.Wind.Speed)
+		result += fmt.Sprintf("\n<b>Ветер:</b> %d м/с", windSpeed)
+	}
+
+	if w.Main.Pressure > 0 {
+		pressureMmHg := int(float64(w.Main.Pressure) * 0.75006)
+		result += fmt.Sprintf("\n<b>Давление:</b> %d мм рт.ст.", pressureMmHg)
+	}
+
+	return result
 }
 
 func getWeatherStub(city string) string {
-	return fmt.Sprintf(`<b>%s (демо-режим)</b>
+	return fmt.Sprintf(`<b>Погода в городе %s (демо-режим)</b>
 
 <b>Температура:</b> 22°C (ощущается как 24°C)
-<b>Мин/Макс:</b> 19°C / 25°C
 <b>Описание:</b> переменная облачность
 <b>Влажность:</b> 65%%
 <b>Ветер:</b> 3 м/с
 <b>Давление:</b> 760 мм рт.ст.
-<b>Видимость:</b> 10 км
-<b>Облачность:</b> 40%%
 
-<i>Для реальных данных настройте OPENWEATHER_API_KEY</i>`, city)
+<i>Для получения реальных данных настройте OPENWEATHER_API_KEY</i>`, city)
 }
