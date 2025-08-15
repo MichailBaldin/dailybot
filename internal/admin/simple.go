@@ -41,8 +41,12 @@ func (a *SimpleAdmin) Start() {
 	port := a.config.AdminPort
 	log.Printf("🎛 Admin panel: http://localhost:%s", port)
 	log.Printf("🔑 Password: %s", a.config.AdminPassword)
+	log.Printf("📡 Listening on 0.0.0.0:%s", port)
 
-	http.ListenAndServe(":"+port, nil)
+	// Слушаем на всех интерфейсах (важно для Docker)
+	if err := http.ListenAndServe("0.0.0.0:"+port, nil); err != nil {
+		log.Printf("❌ Failed to start admin server: %v", err)
+	}
 }
 
 func (a *SimpleAdmin) LogCommand(userID int64, command, args string) {
