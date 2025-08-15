@@ -7,12 +7,17 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+type AdminLogger interface {
+	LogCommand(userID int64, command, args string)
+}
+
 type Bot struct {
 	api    *tgbotapi.BotAPI
 	config *config.Config
+	admin  AdminLogger
 }
 
-func New(cfg *config.Config) (*Bot, error) {
+func New(cfg *config.Config, adminLogger AdminLogger) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
 		return nil, err
@@ -24,6 +29,7 @@ func New(cfg *config.Config) (*Bot, error) {
 	return &Bot{
 		api:    api,
 		config: cfg,
+		admin:  adminLogger,
 	}, nil
 }
 
@@ -44,18 +50,25 @@ func (b *Bot) Start() {
 
 func (b *Bot) handleMessage(message *tgbotapi.Message) {
 	chatID := message.Chat.ID
+	command := message.Command()
+	args := message.CommandArguments()
 
-	switch message.Command() {
+	// Логируем команду в админку
+	if command != "" {
+		b.admin.LogCommand(chatID, command, args)
+	}
+
+	switch command {
 	case "start":
 		b.handleStart(chatID)
 	case "help":
 		b.handleHelp(chatID)
 	case "weather":
-		b.handleWeather(chatID, message.CommandArguments())
+		b.handleWeather(chatID, args)
 	case "news":
 		b.handleNews(chatID)
 	case "exchange":
-		b.handleExchange(chatID, message.CommandArguments())
+		b.handleExchange(chatID, args)
 	default:
 		if message.IsCommand() {
 			b.sendMessage(chatID, "Unknown command. Please use /help")
